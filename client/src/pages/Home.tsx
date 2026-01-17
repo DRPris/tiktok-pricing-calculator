@@ -4,6 +4,7 @@
  * - Deep blue primary color for trust and stability
  * - Amber accent color for key data and CTAs
  * - Multi-country support with dynamic fee calculation
+ * - Dual currency display (local + CNY)
  */
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CurrencyDisplay } from "@/components/CurrencyDisplay";
 import { COUNTRIES, COUNTRY_LIST, getCommissionRate, getCommerceGrowthRate } from "@/lib/countryConfig";
 import { Calculator, Download, Globe, Info, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -145,8 +147,8 @@ function calculatePricing(
 
 export default function Home() {
   const [countryCode, setCountryCode] = useState("TH");
-  const [purchaseCost, setPurchaseCost] = useState(100);
-  const [logisticsCost, setLogisticsCost] = useState(15);
+  const [purchaseCostCNY, setPurchaseCostCNY] = useState(20); // 人民币输入
+  const [logisticsCostCNY, setLogisticsCostCNY] = useState(5.5); // 人民币输入
   const [category, setCategory] = useState<"electronics" | "other">("other");
   const [dutyRate, setDutyRate] = useState(0.30);
   const [targetProfitRate, setTargetProfitRate] = useState(0.30);
@@ -155,12 +157,16 @@ export default function Home() {
   const [result, setResult] = useState<PricingResult | null>(null);
 
   const currentCountry = COUNTRIES[countryCode];
+  
+  // 将人民币转换为本地货币
+  const purchaseCostLocal = purchaseCostCNY / currentCountry.exchangeRateToCNY;
+  const logisticsCostLocal = logisticsCostCNY / currentCountry.exchangeRateToCNY;
 
   useEffect(() => {
     const calculated = calculatePricing(
       countryCode,
-      purchaseCost,
-      logisticsCost,
+      purchaseCostLocal,
+      logisticsCostLocal,
       category,
       dutyRate,
       targetProfitRate,
@@ -168,7 +174,7 @@ export default function Home() {
       sellerDiscount
     );
     setResult(calculated);
-  }, [countryCode, purchaseCost, logisticsCost, category, dutyRate, targetProfitRate, platformSubsidy, sellerDiscount]);
+  }, [countryCode, purchaseCostLocal, logisticsCostLocal, category, dutyRate, targetProfitRate, platformSubsidy, sellerDiscount]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -182,7 +188,7 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">东南亚TikTok Shop定价计算器</h1>
-                <p className="text-sm text-muted-foreground">支持泰国、越南、菲律宾、马来西亚、新加坡</p>
+                <p className="text-sm text-muted-foreground">支持人民币输入 · 自动汇率转换</p>
               </div>
             </div>
             <Button variant="outline" size="sm">
@@ -221,8 +227,15 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium">当前汇率</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    1 {currentCountry.currency} = ¥{currentCountry.exchangeRateToCNY.toFixed(4)}
+                  </p>
+                </div>
+                
                 {currentCountry.newSellerBenefit && (
-                  <div className="mt-4 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                  <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
                     <p className="text-sm font-medium text-accent-foreground flex items-center gap-2">
                       <Info className="h-4 w-4" />
                       新商家优惠
@@ -239,28 +252,34 @@ export default function Home() {
                   <Calculator className="h-5 w-5 text-primary" />
                   基础参数设置
                 </CardTitle>
-                <CardDescription>设置商品的采购成本和物流费用</CardDescription>
+                <CardDescription>使用人民币输入，自动转换为目标市场货币</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="purchase-cost">采购成本 ({currentCountry.currency})</Label>
+                  <Label htmlFor="purchase-cost">采购成本 (人民币 ¥)</Label>
                   <Input
                     id="purchase-cost"
                     type="number"
-                    value={purchaseCost}
-                    onChange={(e) => setPurchaseCost(Number(e.target.value))}
+                    value={purchaseCostCNY}
+                    onChange={(e) => setPurchaseCostCNY(Number(e.target.value))}
                     className="text-lg font-medium"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {currentCountry.currencySymbol}{purchaseCostLocal.toFixed(2)} {currentCountry.currency}
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="logistics-cost">物流成本 ({currentCountry.currency}/件)</Label>
+                  <Label htmlFor="logistics-cost">物流成本 (人民币 ¥/件)</Label>
                   <Input
                     id="logistics-cost"
                     type="number"
-                    value={logisticsCost}
-                    onChange={(e) => setLogisticsCost(Number(e.target.value))}
+                    value={logisticsCostCNY}
+                    onChange={(e) => setLogisticsCostCNY(Number(e.target.value))}
                     className="text-lg font-medium"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {currentCountry.currencySymbol}{logisticsCostLocal.toFixed(2)} {currentCountry.currency}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">商品类目</Label>
@@ -321,7 +340,7 @@ export default function Home() {
                   <Info className="h-5 w-5 text-primary" />
                   补贴与折扣 (可选)
                 </CardTitle>
-                <CardDescription>设置平台补贴和商家折扣金额</CardDescription>
+                <CardDescription>设置平台补贴和商家折扣金额（本地货币）</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -333,6 +352,11 @@ export default function Home() {
                     onChange={(e) => setPlatformSubsidy(Number(e.target.value))}
                     className="text-lg font-medium"
                   />
+                  {platformSubsidy > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      ≈ ¥{(platformSubsidy * currentCountry.exchangeRateToCNY).toFixed(2)}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="seller-discount">商家折扣 ({currentCountry.currency})</Label>
@@ -343,6 +367,11 @@ export default function Home() {
                     onChange={(e) => setSellerDiscount(Number(e.target.value))}
                     className="text-lg font-medium"
                   />
+                  {sellerDiscount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      ≈ ¥{(sellerDiscount * currentCountry.exchangeRateToCNY).toFixed(2)}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -361,36 +390,51 @@ export default function Home() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm text-muted-foreground">含税零售价 (买家支付)</span>
-                        <span className="text-3xl font-bold text-primary">
-                          {currentCountry.currencySymbol}{result.retailPrice.toFixed(2)}
-                        </span>
+                        <CurrencyDisplay
+                          amount={result.retailPrice}
+                          currencySymbol={currentCountry.currencySymbol}
+                          exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                          size="xl"
+                          className="text-primary"
+                        />
                       </div>
                       <Separator />
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm text-muted-foreground">税前售价</span>
-                        <span className="text-xl font-semibold text-foreground">
-                          {currentCountry.currencySymbol}{result.preTaxPrice.toFixed(2)}
-                        </span>
+                        <CurrencyDisplay
+                          amount={result.preTaxPrice}
+                          currencySymbol={currentCountry.currencySymbol}
+                          exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                          size="lg"
+                        />
                       </div>
                       {(sellerDiscount > 0 || platformSubsidy > 0) && (
                         <>
                           <Separator />
                           <div className="flex justify-between items-baseline">
                             <span className="text-sm text-muted-foreground">消费者实付</span>
-                            <span className="text-xl font-semibold text-accent">
-                              {currentCountry.currencySymbol}{(result.retailPrice - platformSubsidy).toFixed(2)}
-                            </span>
+                            <CurrencyDisplay
+                              amount={result.retailPrice - platformSubsidy}
+                              currencySymbol={currentCountry.currencySymbol}
+                              exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                              size="lg"
+                              className="text-accent"
+                            />
                           </div>
                         </>
                       )}
                     </div>
 
                     <div className="bg-accent/10 rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">实际利润</span>
-                        <span className="text-lg font-bold text-green-600">
-                          {currentCountry.currencySymbol}{result.revenue.actualProfit.toFixed(2)}
-                        </span>
+                        <CurrencyDisplay
+                          amount={result.revenue.actualProfit}
+                          currencySymbol={currentCountry.currencySymbol}
+                          exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                          size="lg"
+                          className="text-green-600"
+                        />
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm font-medium">利润率</span>
@@ -416,40 +460,74 @@ export default function Home() {
                       </TabsList>
                       
                       <TabsContent value="costs" className="space-y-3 mt-4">
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">采购成本</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.costs.purchaseCost.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.costs.purchaseCost}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">物流成本</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.costs.logisticsCost.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.costs.logisticsCost}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
                         <Separator />
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="font-semibold">成本合计</span>
-                          <span className="font-bold text-lg">{currentCountry.currencySymbol}{result.costs.totalCost.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.costs.totalCost}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="md"
+                          />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="taxes" className="space-y-3 mt-4">
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">进口关税</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.taxes.importDuty.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.taxes.importDuty}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">进口环节{currentCountry.vatName}</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.taxes.importVAT.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.taxes.importVAT}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">销售环节{currentCountry.vatName}</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.taxes.salesVAT.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.taxes.salesVAT}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
                         <Separator />
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="font-semibold">税费合计</span>
-                          <span className="font-bold text-lg text-blue-600">
-                            {currentCountry.currencySymbol}{result.taxes.totalTax.toFixed(2)}
-                          </span>
+                          <CurrencyDisplay
+                            amount={result.taxes.totalTax}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="md"
+                            className="text-blue-600"
+                          />
                         </div>
                         <div className="text-xs text-muted-foreground mt-2">
                           {currentCountry.vatName}税率：{(currentCountry.vatRate * 100).toFixed(0)}%
@@ -457,58 +535,101 @@ export default function Home() {
                       </TabsContent>
 
                       <TabsContent value="platform" className="space-y-3 mt-4">
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">平台佣金</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.platformFees.commission.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.platformFees.commission}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
                         {result.platformFees.commerceGrowth > 0 && (
-                          <div className="flex justify-between py-2">
+                          <div className="flex justify-between py-2 items-center">
                             <span className="text-sm">电商增长服务费</span>
-                            <span className="font-medium">{currentCountry.currencySymbol}{result.platformFees.commerceGrowth.toFixed(2)}</span>
+                            <CurrencyDisplay
+                              amount={result.platformFees.commerceGrowth}
+                              currencySymbol={currentCountry.currencySymbol}
+                              exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                              size="sm"
+                            />
                           </div>
                         )}
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">交易手续费</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.platformFees.transaction.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.platformFees.transaction}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
                         {result.platformFees.infrastructure > 0 && (
-                          <div className="flex justify-between py-2">
+                          <div className="flex justify-between py-2 items-center">
                             <span className="text-sm">平台基础设施费</span>
-                            <span className="font-medium">{currentCountry.currencySymbol}{result.platformFees.infrastructure.toFixed(2)}</span>
+                            <CurrencyDisplay
+                              amount={result.platformFees.infrastructure}
+                              currencySymbol={currentCountry.currencySymbol}
+                              exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                              size="sm"
+                            />
                           </div>
                         )}
                         {result.platformFees.orderProcessing > 0 && (
-                          <div className="flex justify-between py-2">
+                          <div className="flex justify-between py-2 items-center">
                             <span className="text-sm">订单处理费</span>
-                            <span className="font-medium">{currentCountry.currencySymbol}{result.platformFees.orderProcessing.toFixed(2)}</span>
+                            <CurrencyDisplay
+                              amount={result.platformFees.orderProcessing}
+                              currencySymbol={currentCountry.currencySymbol}
+                              exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                              size="sm"
+                            />
                           </div>
                         )}
                         <Separator />
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="font-semibold">平台费用合计</span>
-                          <span className="font-bold text-lg text-purple-600">
-                            {currentCountry.currencySymbol}{result.platformFees.totalFees.toFixed(2)}
-                          </span>
+                          <CurrencyDisplay
+                            amount={result.platformFees.totalFees}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="md"
+                            className="text-purple-600"
+                          />
                         </div>
                       </TabsContent>
 
                       <TabsContent value="revenue" className="space-y-3 mt-4">
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">商家实际收入</span>
-                          <span className="font-medium">{currentCountry.currencySymbol}{result.revenue.actualRevenue.toFixed(2)}</span>
+                          <CurrencyDisplay
+                            amount={result.revenue.actualRevenue}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="sm"
+                          />
                         </div>
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="text-sm">总成本</span>
-                          <span className="font-medium text-red-600">
-                            -{currentCountry.currencySymbol}{result.costs.totalCost.toFixed(2)}
-                          </span>
+                          <div className="flex flex-col items-end text-red-600">
+                            <span className="text-sm font-bold">
+                              -{currentCountry.currencySymbol}{result.costs.totalCost.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ≈ -¥{(result.costs.totalCost * currentCountry.exchangeRateToCNY).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                         <Separator />
-                        <div className="flex justify-between py-2">
+                        <div className="flex justify-between py-2 items-center">
                           <span className="font-semibold">净利润</span>
-                          <span className="font-bold text-lg text-green-600">
-                            {currentCountry.currencySymbol}{result.revenue.actualProfit.toFixed(2)}
-                          </span>
+                          <CurrencyDisplay
+                            amount={result.revenue.actualProfit}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="md"
+                            className="text-green-600"
+                          />
                         </div>
                         <div className="flex justify-between py-2">
                           <span className="font-semibold">利润率</span>
@@ -556,6 +677,7 @@ export default function Home() {
                     <th className="text-left py-3 px-4 font-semibold">平台佣金</th>
                     <th className="text-left py-3 px-4 font-semibold">交易手续费</th>
                     <th className="text-left py-3 px-4 font-semibold">税率</th>
+                    <th className="text-left py-3 px-4 font-semibold">汇率</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -569,6 +691,7 @@ export default function Home() {
                       </td>
                       <td className="py-3 px-4">{(country.transactionFeeRate * 100).toFixed(2)}%</td>
                       <td className="py-3 px-4">{country.vatName} {(country.vatRate * 100).toFixed(0)}%</td>
+                      <td className="py-3 px-4 text-xs">1{country.currency} = ¥{country.exchangeRateToCNY.toFixed(4)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -582,7 +705,7 @@ export default function Home() {
       <footer className="border-t mt-12 py-6 bg-card/30">
         <div className="container text-center text-sm text-muted-foreground">
           <p>数据来源：TikTok Shop官方商家大学 | 更新时间：2026年1月</p>
-          <p className="mt-2">本工具仅供参考，实际费用以平台结算为准</p>
+          <p className="mt-2">本工具仅供参考，实际费用以平台结算为准 | 汇率数据为参考值，请以实时汇率为准</p>
         </div>
       </footer>
     </div>

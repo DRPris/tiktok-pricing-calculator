@@ -9,6 +9,7 @@ export interface CountryConfig {
   nameCN: string;
   currency: string;
   currencySymbol: string;
+  exchangeRateToCNY: number; // 1 unit local currency = X CNY
   
   // 平台费率
   commissionRate: {
@@ -47,6 +48,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
     nameCN: '泰国',
     currency: 'THB',
     currencySymbol: '฿',
+    exchangeRateToCNY: 0.20,
     commissionRate: {
       electronics: 0.0535,
       other: 0.0642,
@@ -75,6 +77,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
     nameCN: '越南',
     currency: 'VND',
     currencySymbol: '₫',
+    exchangeRateToCNY: 0.00029,
     commissionRate: {
       other: 0.05,
     },
@@ -96,6 +99,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
     nameCN: '菲律宾',
     currency: 'PHP',
     currencySymbol: '₱',
+    exchangeRateToCNY: 0.13,
     commissionRate: {
       range: [0.05, 0.091],
     },
@@ -117,6 +121,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
     nameCN: '马来西亚',
     currency: 'MYR',
     currencySymbol: 'RM',
+    exchangeRateToCNY: 1.60,
     commissionRate: {
       range: [0.04, 0.08], // 基础+涨佣后
     },
@@ -138,6 +143,7 @@ export const COUNTRIES: Record<string, CountryConfig> = {
     nameCN: '新加坡',
     currency: 'SGD',
     currencySymbol: 'S$',
+    exchangeRateToCNY: 5.30,
     commissionRate: {
       other: 0.0327,
     },
