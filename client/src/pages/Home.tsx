@@ -5,6 +5,7 @@
  * - Amber accent color for key data and CTAs
  * - Multi-country support with dynamic fee calculation
  * - Dual currency display (local + CNY)
+ * - Country-specific fee structures
  */
 
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CurrencyDisplay } from "@/components/CurrencyDisplay";
-import { COUNTRIES, COUNTRY_LIST, getCommissionRate, getCommerceGrowthRate } from "@/lib/countryConfig";
-import { Calculator, Download, Globe, Info, TrendingUp } from "lucide-react";
+import { COUNTRIES, COUNTRY_LIST, getCommissionRate, getCommerceGrowthRate, getOrderProcessingFee } from "@/lib/countryConfig";
+import { Calculator, Download, Globe, Info, TrendingUp, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface PricingResult {
@@ -61,14 +63,16 @@ function calculatePricing(
   dutyRate: number,
   targetProfitRate: number,
   platformSubsidy: number,
-  sellerDiscount: number
+  sellerDiscount: number,
+  isBXP: boolean = true,
+  isNewSeller: boolean = false
 ): PricingResult {
   const config = COUNTRIES[countryCode];
-  const commissionRate = getCommissionRate(countryCode, category);
+  const commissionRate = getCommissionRate(countryCode, category, isBXP);
   const transactionFeeRate = config.transactionFeeRate;
   const vatRate = config.vatRate;
   const infrastructureFee = config.infrastructureFee || 0;
-  const orderProcessingFee = config.orderProcessingFee || 0;
+  const orderProcessingFee = getOrderProcessingFee(countryCode, isNewSeller, 0);
   
   const commerceGrowth = getCommerceGrowthRate(countryCode, category);
   const commerceGrowthRate = commerceGrowth.rate;
@@ -147,18 +151,19 @@ function calculatePricing(
 
 export default function Home() {
   const [countryCode, setCountryCode] = useState("TH");
-  const [purchaseCostCNY, setPurchaseCostCNY] = useState(20); // 人民币输入
-  const [logisticsCostCNY, setLogisticsCostCNY] = useState(5.5); // 人民币输入
+  const [purchaseCostCNY, setPurchaseCostCNY] = useState(20);
+  const [logisticsCostCNY, setLogisticsCostCNY] = useState(5.5);
   const [category, setCategory] = useState<"electronics" | "other">("other");
   const [dutyRate, setDutyRate] = useState(0.30);
   const [targetProfitRate, setTargetProfitRate] = useState(0.30);
   const [platformSubsidy, setPlatformSubsidy] = useState(0);
   const [sellerDiscount, setSellerDiscount] = useState(0);
+  const [isBXP, setIsBXP] = useState(true); // 马来西亚BXP选项
+  const [isNewSeller, setIsNewSeller] = useState(false); // 菲律宾新卖家选项
   const [result, setResult] = useState<PricingResult | null>(null);
 
   const currentCountry = COUNTRIES[countryCode];
   
-  // 将人民币转换为本地货币
   const purchaseCostLocal = purchaseCostCNY / currentCountry.exchangeRateToCNY;
   const logisticsCostLocal = logisticsCostCNY / currentCountry.exchangeRateToCNY;
 
@@ -171,10 +176,12 @@ export default function Home() {
       dutyRate,
       targetProfitRate,
       platformSubsidy,
-      sellerDiscount
+      sellerDiscount,
+      isBXP,
+      isNewSeller
     );
     setResult(calculated);
-  }, [countryCode, purchaseCostLocal, logisticsCostLocal, category, dutyRate, targetProfitRate, platformSubsidy, sellerDiscount]);
+  }, [countryCode, purchaseCostLocal, logisticsCostLocal, category, dutyRate, targetProfitRate, platformSubsidy, sellerDiscount, isBXP, isNewSeller]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,7 +195,7 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">东南亚TikTok Shop定价计算器</h1>
-                <p className="text-sm text-muted-foreground">支持人民币输入 · 自动汇率转换</p>
+                <p className="text-sm text-muted-foreground">支持人民币输入 · 国家特定费用 · 自动汇率转换</p>
               </div>
             </div>
             <Button variant="outline" size="sm">
@@ -211,9 +218,9 @@ export default function Home() {
                   <Globe className="h-5 w-5 text-primary" />
                   选择目标市场
                 </CardTitle>
-                <CardDescription>不同国家的费率标准有所差异</CardDescription>
+                <CardDescription>不同国家的费率标准和特殊费用有所差异</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-4">
                 <Select value={countryCode} onValueChange={setCountryCode}>
                   <SelectTrigger className="text-lg font-medium h-12">
                     <SelectValue />
@@ -227,20 +234,65 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm font-medium">当前汇率</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     1 {currentCountry.currency} = ¥{currentCountry.exchangeRateToCNY.toFixed(4)}
                   </p>
                 </div>
                 
+                {/* 马来西亚BXP选项 */}
+                {countryCode === 'MY' && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">BXP卖家 (Bonus Extra Program)</p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                          BXP卖家享受更低佣金(比非BXP低4%)
+                        </p>
+                      </div>
+                      <Switch checked={isBXP} onCheckedChange={setIsBXP} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 菲律宾新卖家选项 */}
+                {countryCode === 'PH' && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-900 dark:text-green-100">新卖家 (90天内)</p>
+                        <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                          新卖家订单处理费全免
+                        </p>
+                      </div>
+                      <Switch checked={isNewSeller} onCheckedChange={setIsNewSeller} />
+                    </div>
+                  </div>
+                )}
+                
                 {currentCountry.newSellerBenefit && (
-                  <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                  <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
                     <p className="text-sm font-medium text-accent-foreground flex items-center gap-2">
                       <Info className="h-4 w-4" />
                       新商家优惠
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">{currentCountry.newSellerBenefit}</p>
+                  </div>
+                )}
+                
+                {/* 国家特殊功能提示 */}
+                {currentCountry.specialFeatures && currentCountry.specialFeatures.length > 0 && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-100 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {currentCountry.nameCN}市场特点
+                    </p>
+                    <ul className="text-xs text-amber-700 dark:text-amber-300 mt-2 space-y-1">
+                      {currentCountry.specialFeatures.map((feature, index) => (
+                        <li key={index}>• {feature}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </CardContent>
@@ -293,7 +345,8 @@ export default function Home() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    当前佣金率：{(getCommissionRate(countryCode, category) * 100).toFixed(2)}%
+                    当前佣金率：{(getCommissionRate(countryCode, category, isBXP) * 100).toFixed(2)}%
+                    {countryCode === 'MY' && !isBXP && ' (非BXP)'}
                   </p>
                 </div>
               </CardContent>
@@ -384,7 +437,11 @@ export default function Home() {
                 <Card className="shadow-xl bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 animate-fade-up">
                   <CardHeader>
                     <CardTitle className="text-2xl">定价结果</CardTitle>
-                    <CardDescription>基于{currentCountry.nameCN}市场费率计算</CardDescription>
+                    <CardDescription>
+                      基于{currentCountry.nameCN}市场费率计算
+                      {countryCode === 'MY' && ` (${isBXP ? 'BXP卖家' : '非BXP卖家'})`}
+                      {countryCode === 'PH' && isNewSeller && ' (新卖家)'}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-3">
@@ -676,6 +733,7 @@ export default function Home() {
                     <th className="text-left py-3 px-4 font-semibold">市场</th>
                     <th className="text-left py-3 px-4 font-semibold">平台佣金</th>
                     <th className="text-left py-3 px-4 font-semibold">交易手续费</th>
+                    <th className="text-left py-3 px-4 font-semibold">固定费用</th>
                     <th className="text-left py-3 px-4 font-semibold">税率</th>
                     <th className="text-left py-3 px-4 font-semibold">汇率</th>
                   </tr>
@@ -690,6 +748,11 @@ export default function Home() {
                           : `${((country.commissionRate.electronics || country.commissionRate.other || 0) * 100).toFixed(2)}%`}
                       </td>
                       <td className="py-3 px-4">{(country.transactionFeeRate * 100).toFixed(2)}%</td>
+                      <td className="py-3 px-4">
+                        {country.infrastructureFee && `${country.currencySymbol}${country.infrastructureFee}/单`}
+                        {country.orderProcessingFee && `${country.currencySymbol}${country.orderProcessingFee}/单`}
+                        {!country.infrastructureFee && !country.orderProcessingFee && '-'}
+                      </td>
                       <td className="py-3 px-4">{country.vatName} {(country.vatRate * 100).toFixed(0)}%</td>
                       <td className="py-3 px-4 text-xs">1{country.currency} = ¥{country.exchangeRateToCNY.toFixed(4)}</td>
                     </tr>
