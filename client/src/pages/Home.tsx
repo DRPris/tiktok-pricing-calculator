@@ -18,7 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CurrencyDisplay } from "@/components/CurrencyDisplay";
 import { COUNTRIES, COUNTRY_LIST, getCommissionRate, getCommerceGrowthRate, getOrderProcessingFee } from "@/lib/countryConfig";
-import { Calculator, Download, Globe, Info, TrendingUp, AlertCircle } from "lucide-react";
+import { Calculator, Download, Globe, Info, TrendingUp, AlertCircle, ExternalLink, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface PricingResult {
@@ -278,6 +278,90 @@ export default function Home() {
                       新商家优惠
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">{currentCountry.newSellerBenefit}</p>
+                  </div>
+                )}
+                
+                {/* 数据更新日期和官方文档 */}
+                {currentCountry.lastUpdated && (
+                  <div className="p-3 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        数据更新日期
+                      </p>
+                      <span className="text-xs text-muted-foreground">{currentCountry.lastUpdated}</span>
+                    </div>
+                    {currentCountry.officialDocs && (
+                      <div className="space-y-1.5 mt-2">
+                        <p className="text-xs font-medium text-muted-foreground">官方文档参考：</p>
+                        {currentCountry.officialDocs.overview && (
+                          <a
+                            href={currentCountry.officialDocs.overview}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            费用总览
+                          </a>
+                        )}
+                        {currentCountry.officialDocs.commission && (
+                          <a
+                            href={currentCountry.officialDocs.commission}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            平台佣金
+                          </a>
+                        )}
+                        {currentCountry.officialDocs.transaction && (
+                          <a
+                            href={currentCountry.officialDocs.transaction}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            交易手续费
+                          </a>
+                        )}
+                        {currentCountry.officialDocs.infrastructure && (
+                          <a
+                            href={currentCountry.officialDocs.infrastructure}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            平台基础设施费
+                          </a>
+                        )}
+                        {currentCountry.officialDocs.orderProcessing && (
+                          <a
+                            href={currentCountry.officialDocs.orderProcessing}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            订单处理费
+                          </a>
+                        )}
+                        {currentCountry.officialDocs.tax && (
+                          <a
+                            href={currentCountry.officialDocs.tax}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            税费政策
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 

@@ -58,6 +58,19 @@ export interface CountryConfig {
   
   // 备注
   notes?: string[];
+  
+  // 官方文档链接
+  officialDocs?: {
+    commission?: string; // 佣金费用文档
+    transaction?: string; // 交易手续费文档
+    tax?: string; // 税费文档
+    infrastructure?: string; // 基础设施费文档
+    orderProcessing?: string; // 订单处理费文档
+    overview?: string; // 费用总览文档
+  };
+  
+  // 数据最后更新日期
+  lastUpdated?: string;
 }
 
 export const COUNTRIES: Record<string, CountryConfig> = {
@@ -91,6 +104,14 @@ export const COUNTRIES: Record<string, CountryConfig> = {
       '2024年4月起交易手续费调整为3.21%',
       '电商增长服务费和平台佣金分开计算',
     ],
+    officialDocs: {
+      commission: 'https://seller.tiktokglobalshop.com/university/essay?knowledge_id=2378877561652994',
+      transaction: 'https://seller-th.tiktok.com/university/essay?knowledge_id=4831419884979969',
+      tax: 'https://seller.tiktokglobalshop.com/university/essay?knowledge_id=1439970296497937',
+      infrastructure: 'https://seller-th.tiktok.com/university/essay?knowledge_id=4832028500215569',
+      overview: 'https://seller.tiktokglobalshop.com/university/home?identity=1&knowledge_id=10014924',
+    },
+    lastUpdated: '2026-01-17',
   },
   
   VN: {
@@ -114,6 +135,11 @@ export const COUNTRIES: Record<string, CountryConfig> = {
       '2025年2月23日起代扣高价值商品关税',
       '存在订单处理手续费但金额未明确',
     ],
+    officialDocs: {
+      overview: 'https://seller-vn.tiktok.com/university/home?identity=1',
+      commission: 'https://seller.tiktokglobalshop.com/university/essay?knowledge_id=6173886299686658',
+    },
+    lastUpdated: '2026-01-17',
   },
   
   PH: {
@@ -148,6 +174,13 @@ export const COUNTRIES: Record<string, CountryConfig> = {
       '2025年12月1日起收取订单处理费',
       'Mall商家和Marketplace商家佣金不同',
     ],
+    officialDocs: {
+      commission: 'https://seller-ph.tiktok.com/university/essay?knowledge_id=3157977859229442',
+      transaction: 'https://seller-ph.tiktok.com/university/essay?knowledge_id=3161439284496130',
+      orderProcessing: 'https://seller-ph.tiktok.com/university/essay?knowledge_id=6374416701966081',
+      overview: 'https://seller-ph.tiktok.com/university/home?identity=1',
+    },
+    lastUpdated: '2026-01-17',
   },
   
   MY: {
@@ -179,6 +212,11 @@ export const COUNTRIES: Record<string, CountryConfig> = {
       'BXP卖家可获叠加折扣券、返现、平台曝光',
       '交易手续费2024年9月5日从2.16%涨至3.78%',
     ],
+    officialDocs: {
+      commission: 'https://seller-my.tiktok.com/university/essay?knowledge_id=6907739532281602',
+      overview: 'https://seller-my.tiktok.com/university/home?identity=1',
+    },
+    lastUpdated: '2026-01-17',
   },
   
   SG: {
@@ -205,6 +243,11 @@ export const COUNTRIES: Record<string, CountryConfig> = {
       '2024年1月1日起征收低价值商品税',
       'GST税率9%',
     ],
+    officialDocs: {
+      overview: 'https://seller-sg.tiktok.com/university/home?identity=1',
+      commission: 'https://seller.tiktokglobalshop.com/university/essay?knowledge_id=6173886299686658',
+    },
+    lastUpdated: '2026-01-17',
   },
 };
 
