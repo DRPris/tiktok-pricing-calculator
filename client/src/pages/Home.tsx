@@ -53,6 +53,12 @@ interface PricingResult {
     actualProfit: number;
     profitRate: number;
   };
+  returnLoss: {
+    returnRate: number;
+    returnCost: number;
+    adjustedProfit: number;
+    adjustedProfitRate: number;
+  };
 }
 
 function calculatePricing(
@@ -65,7 +71,8 @@ function calculatePricing(
   platformSubsidy: number,
   sellerDiscount: number,
   isBXP: boolean = true,
-  isNewSeller: boolean = false
+  isNewSeller: boolean = false,
+  returnRate: number = 0
 ): PricingResult {
   const config = COUNTRIES[countryCode];
   const commissionRate = getCommissionRate(countryCode, category, isBXP);
@@ -146,6 +153,12 @@ function calculatePricing(
       actualProfit,
       profitRate,
     },
+    returnLoss: {
+      returnRate,
+      returnCost: actualRevenue * returnRate,
+      adjustedProfit: actualProfit - actualRevenue * returnRate,
+      adjustedProfitRate: costBase > 0 ? (actualProfit - actualRevenue * returnRate) / costBase : 0,
+    },
   };
 }
 
@@ -160,6 +173,7 @@ export default function Home() {
   const [sellerDiscount, setSellerDiscount] = useState(0);
   const [isBXP, setIsBXP] = useState(true); // 马来西亚BXP选项
   const [isNewSeller, setIsNewSeller] = useState(false); // 菲律宾新卖家选项
+  const [returnRate, setReturnRate] = useState(0.05); // 退货率，默认5%
   const [result, setResult] = useState<PricingResult | null>(null);
 
   const currentCountry = COUNTRIES[countryCode];
@@ -178,10 +192,11 @@ export default function Home() {
       platformSubsidy,
       sellerDiscount,
       isBXP,
-      isNewSeller
+      isNewSeller,
+      returnRate
     );
     setResult(calculated);
-  }, [countryCode, purchaseCostLocal, logisticsCostLocal, category, dutyRate, targetProfitRate, platformSubsidy, sellerDiscount, isBXP, isNewSeller]);
+  }, [countryCode, purchaseCostLocal, logisticsCostLocal, category, dutyRate, targetProfitRate, platformSubsidy, sellerDiscount, isBXP, isNewSeller, returnRate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -468,6 +483,19 @@ export default function Home() {
                     className="text-lg font-medium"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="return-rate">退货率 (%)</Label>
+                  <Input
+                    id="return-rate"
+                    type="number"
+                    value={returnRate * 100}
+                    onChange={(e) => setReturnRate(Number(e.target.value) / 100)}
+                    className="text-lg font-medium"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    退货会导致收入损失，建议根据历史数据设置
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -584,6 +612,38 @@ export default function Home() {
                         </span>
                       </div>
                     </div>
+                    
+                    {result.returnLoss.returnRate > 0 && (
+                      <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4 space-y-2 border border-orange-200 dark:border-orange-800">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-orange-900 dark:text-orange-100">退货损失 ({(result.returnLoss.returnRate * 100).toFixed(1)}%)</span>
+                          <CurrencyDisplay
+                            amount={result.returnLoss.returnCost}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="md"
+                            className="text-orange-600 dark:text-orange-400"
+                          />
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-orange-900 dark:text-orange-100">调整后利润</span>
+                          <CurrencyDisplay
+                            amount={result.returnLoss.adjustedProfit}
+                            currencySymbol={currentCountry.currencySymbol}
+                            exchangeRateToCNY={currentCountry.exchangeRateToCNY}
+                            size="lg"
+                            className="text-orange-700 dark:text-orange-300 font-bold"
+                          />
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-orange-900 dark:text-orange-100">调整后利润率</span>
+                          <span className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                            {(result.returnLoss.adjustedProfitRate * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
